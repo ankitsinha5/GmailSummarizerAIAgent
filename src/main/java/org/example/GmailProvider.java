@@ -32,33 +32,41 @@ public class GmailProvider {
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final List<String> SCOPES = Collections.singletonList(GmailScopes.GMAIL_READONLY);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
+    private final Gmail service;
 
-    public static Gmail getService() throws IOException, GeneralSecurityException {
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        InputStream in = GmailProvider.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-            throw new IOException("Resource not found: " + CREDENTIALS_FILE_PATH + ". Please place your credentials.json in src/main/resources/");
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-                .setAccessType("offline")
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        Credential credential = new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-        
-        return new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
-                .setApplicationName(APPLICATION_NAME)
-                .build();
+    public GmailProvider() throws IOException, GeneralSecurityException {
+        this.service = createService();
     }
 
-    public static List<Message> getEmailsFromLastDay(Gmail service) throws IOException {
+    private Gmail createService() throws IOException, GeneralSecurityException {
+        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        try (InputStream in = GmailProvider.class.getResourceAsStream(CREDENTIALS_FILE_PATH)) {
+            if (in == null) {
+                throw new IOException("Resource not found: " + CREDENTIALS_FILE_PATH + ". Please place your credentials.json in src/main/resources/");
+            }
+            GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
+
+            GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+                    .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+                    .setAccessType("offline")
+                    .build();
+            
+            // Using port 0 allows the system to find an available port automatically
+            LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(-1).build();
+            Credential credential = new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
+
+            return new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
+                    .setApplicationName(APPLICATION_NAME)
+                    .build();
+        }
+    }
+
+    public List<Message> getEmailsFromLastDay() throws IOException {
         long yesterday = Instant.now().minus(1, ChronoUnit.DAYS).getEpochSecond();
         String query = "after:" + yesterday;
         
-        ListMessagesResponse response = service.users().messages().list("me")
+        ListMessagesResponse response = this.service.users().messages().list("me")
                 .setQ(query)
                 .execute();
 
@@ -67,7 +75,7 @@ public class GmailProvider {
             messages.addAll(response.getMessages());
             if (response.getNextPageToken() != null) {
                 String pageToken = response.getNextPageToken();
-                response = service.users().messages().list("me")
+                response = this.service.users().messages().list("me")
                         .setQ(query)
                         .setPageToken(pageToken)
                         .execute();
@@ -75,11 +83,12 @@ public class GmailProvider {
                 break;
             }
         }
+        System.out.println("Number of emails : "+messages.size());
         return messages;
     }
 
-    public static String getMessageSnippet(Gmail service, String messageId) throws IOException {
-        Message message = service.users().messages().get("me", messageId).setFormat("full").execute();
+    public String getMessageSnippet(String messageId) throws IOException {
+        Message message = this.service.users().messages().get("me", messageId).setFormat("full").execute();
         // For simplicity, we use snippet. For better results, one should parse the body parts.
         return "Subject: " + getSubject(message) + "\nSnippet: " + message.getSnippet();
     }
