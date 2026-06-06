@@ -15,14 +15,11 @@ public class Main {
       //  String apiKey = System.getenv("GEMINI_API_KEY");
         String apiKey = "AQ.Ab8RN6JMaL691MJQLJYPGsVlBUTIPml-gRELaU0OyZjIX0xudA";
 
-        if (apiKey == null || apiKey.isEmpty()) {
-            System.err.println("Error: GEMINI_API_KEY environment variable is not set.");
-            return;
-        }
-
+        // Using 'gemini-1.5-flash-latest' often resolves 404 issues in v1beta
         GoogleAiGeminiChatModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gemini-1.5-flash") // Free tier model
+                .modelName("gemini-1.5-flash-latest")
+                .logRequestsAndResponses(true) // Helpful for debugging
                 .build();
 
         // 2. Create the AI Service
