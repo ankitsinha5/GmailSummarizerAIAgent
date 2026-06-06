@@ -12,8 +12,8 @@ public class Main {
     public static void main(String[] args) {
         // 1. Setup Gemini Model
         // Recommended: Set this as an environment variable in your IDE run configuration
-      //  String apiKey = System.getenv("GEMINI_API_KEY");
-        String apiKey = "AQ.Ab8RN6JMaL691MJQLJYPGsVlBUTIPml-gRELaU0OyZjIX0xudA";
+          String apiKey = System.getenv("GEMINI_API_KEY");
+   //     String apiKey = "AQ.Ab8RN6JMaL691MJQLJYPGsVlBUTIPml-gRELaU0OyZjIX0xudA";
 
         // Using 'gemini-1.5-flash-latest' often resolves 404 issues in v1beta
         GoogleAiGeminiChatModel model = GoogleAiGeminiChatModel.builder()
