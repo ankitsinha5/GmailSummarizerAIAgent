@@ -5,7 +5,7 @@ An intelligent Java-based utility that connects to your Gmail account, retrieves
 ## 🚀 Features
 
 *   **Secure Gmail Integration**: Uses OAuth 2.0 to securely access Gmail messages without storing passwords.
-*   **AI-Powered Summarization**: Leverages the `gemini-1.5-flash` model via LangChain4j for high-speed, intelligent content analysis.
+*   **AI-Powered Summarization**: Leverages the `gemini-2.0-flash` model via LangChain4j for high-speed, intelligent content analysis.
 *   **Actionable Insights**: Transforms a cluttered inbox into a structured summary of tasks and important information.
 *   **Diagnostic Tools**: Includes built-in model discovery to verify API key capabilities at runtime.
 
@@ -71,7 +71,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Ankit Sinha - see the LICENSE file for details.
 
 ---
 *Developed as part of an exploration into AI-native Java applications.*
