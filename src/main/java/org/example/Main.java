@@ -24,13 +24,10 @@ public class Main {
         String apiKey = Optional.ofNullable(System.getenv("GEMINI_API_KEY"))
                 .orElseThrow(() -> new RuntimeException("Missing environment variable: GEMINI_API_KEY"));
 
-        // 1. Diagnostic: List available models for this specific key
-        listAvailableModels(apiKey);
-
         GoogleAiGeminiChatModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gemini-2.0-flash")
-                .logRequestsAndResponses(true) // Enabled to debug the 404 response details
+                .modelName("gemini-flash-latest")
+                .logRequestsAndResponses(false) // Reduced logging to keep console clean
                 .build();
 
         // 2. Create the AI Service
@@ -42,15 +39,19 @@ public class Main {
             System.out.println("Initializing Gmail connection...");
             GmailProvider gmailProvider = new GmailProvider();
 
-            System.out.println("Retrieving messages from the last 24 hours...");
-            List<Message> messages = gmailProvider.getEmailsFromLastDay();
+            System.out.println("Retrieving latest messages...");
+            List<Message> allMessages = gmailProvider.getEmailsFromLastDay();
             
-            if (messages.isEmpty()) {
+            if (allMessages.isEmpty()) {
                 System.out.println("No new emails found.");
                 return;
             }
 
-            System.out.println("Processing " + messages.size() + " emails...");
+            // Limit to the latest 2 emails for testing to save tokens
+            int limit = Math.min(allMessages.size(), 2);
+            List<Message> messages = allMessages.subList(0, limit);
+
+            System.out.println("Processing the latest " + messages.size() + " emails...");
             StringBuilder allEmailContent = new StringBuilder();
             for (Message m : messages) {
                 String snippet = gmailProvider.getMessageSnippet(m.getId());
@@ -71,26 +72,12 @@ public class Main {
             
             if (msg.contains("401") || msg.contains("403")) {
                 System.err.println("HINT: Authentication failed. Please verify your API Key and ensure the 'Generative Language API' is enabled in your Google Cloud Console.");
+            } else if (msg.contains("429")) {
+                System.err.println("HINT: Rate limit reached (Quota Exhausted).");
+                System.err.println("If using the Free Tier, try switching to 'gemini-1.5-flash' or wait a few minutes before retrying.");
             } else if (msg.contains("404")) {
                 System.err.println("HINT: Model not found. Check if 'gemini-1.5-flash' is available in your region or if the model name is correct.");
             }
-        }
-    }
-
-    private static void listAvailableModels(String apiKey) {
-        System.out.println(">>> Checking available models for your API key...");
-        try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(">>> Available Models Response:");
-            System.out.println(response.body());
-            System.out.println("--------------------------------------------------\n");
-        } catch (Exception e) {
-            System.err.println("Failed to list models: " + e.getMessage());
         }
     }
 }
