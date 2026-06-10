@@ -1,0 +1,15 @@
+# Maven build artifacts
+target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Sensitive credentials and tokens
+credentials.json
+tokens/
+**/tokens/
+storedCredential
+**/StoredCredential
